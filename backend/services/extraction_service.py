@@ -33,7 +33,6 @@ from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-# ── Field schema ─────────────────────────────────────────────────────────────
 # Each key is the field name we want in extracted_data.
 # The value is the natural-language description GLiNER2 uses to find it.
 FIELD_SCHEMA = {
@@ -98,7 +97,6 @@ def _extract_with_gliner2(text: str) -> dict:
         return {}
 
 
-# ── Regex fallback ────────────────────────────────────────────────────────────
 # Used when GLiNER2 misses a field (or if the model isn't installed).
 # Patterns are intentionally broad to handle varied document formats.
 
@@ -135,7 +133,6 @@ def _extract_with_regex(text: str) -> dict:
     return results
 
 
-# ── Main extraction entry point ───────────────────────────────────────────────
 
 def _extract_sync(markdown_text: str) -> dict:
     """

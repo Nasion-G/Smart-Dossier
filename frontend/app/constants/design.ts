@@ -106,23 +106,23 @@ export const Elevation = {
 };
 
 export const PHASE_LABELS: Record<number, string> = {
-  1: 'Njoftimi publik',
-  2: 'Aplikimi',
-  3: 'Verifikimi ASHK',
-  4: 'Llogaritja e vlerës',
-  5: 'Lidhja e kontratës',
-  6: 'Dërgimi ASHK',
-  7: 'Regjistrimi pronësisë',
+  1: 'Public Notice',
+  2: 'Application',
+  3: 'ASHK Verification',
+  4: 'Valuation',
+  5: 'Contract Signing',
+  6: 'Submission to ASHK',
+  7: 'Property Registration',
 };
 
 export const PHASE_DESCRIPTIONS: Record<number, string> = {
-  1: 'EKB afishon njoftimin publik',
-  2: 'Qytetari dorëzon dokumentet fizike',
-  3: 'Verifikim manual me ASHK (2–4 javë)',
-  4: 'Llogaritje vlere me Excel manual',
-  5: 'Nënshkrim fizik i kontratës',
-  6: 'Dosja fizike dërgohet tek ASHK (4–8 javë)',
-  7: 'ASHK regjistron pronësinë',
+  1: 'EKB publishes the public notice',
+  2: 'Citizen submits physical documents',
+  3: 'Manual verification with ASHK (2–4 weeks)',
+  4: 'Manual value calculation with Excel',
+  5: 'Physical contract signing',
+  6: 'Physical file sent to ASHK (4–8 weeks)',
+  7: 'ASHK registers ownership',
 };
 
 export const BOTTLENECK_PHASES = [3, 6];

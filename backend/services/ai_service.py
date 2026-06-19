@@ -28,7 +28,6 @@ from config import settings
 
 logger = logging.getLogger(__name__)
 
-# ── Process knowledge injected into every prompt ─────────────────────────────
 
 PROCESS_CONTEXT = """
 The EKB Property Privatization process has 7 phases:
@@ -88,7 +87,6 @@ def _call_ollama(system: str, prompt: str) -> str:
         )
 
 
-# ── Feature 1: Case summary ───────────────────────────────────────────────────
 
 SUMMARY_SYSTEM = (
     PROCESS_CONTEXT
@@ -125,7 +123,6 @@ async def summarize_case(case) -> str:
     return await loop.run_in_executor(None, _call_ollama, SUMMARY_SYSTEM, user_prompt)
 
 
-# ── Feature 2: Official letter generation ─────────────────────────────────────
 
 LETTER_SYSTEM = (
     "Generate a formal government administrative letter from EKB (Enti i Kalimit të Banesave) "

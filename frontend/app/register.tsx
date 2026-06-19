@@ -12,7 +12,7 @@ export default function RegisterScreen() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
-  const [role, setRole] = useState<UserRole>('qytetar');
+  const [role, setRole] = useState<UserRole>('citizen');
   const { register, isLoading, error, clearError } = useAuthStore();
 
   return (
@@ -22,8 +22,8 @@ export default function RegisterScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.wordmark}>DI</Text>
-          <Text style={styles.brand}>Krijo llogari</Text>
+          <Text style={styles.wordmark}>EKB</Text>
+          <Text style={styles.brand}>Create Account</Text>
         </View>
 
         <View style={styles.card}>
@@ -32,11 +32,11 @@ export default function RegisterScreen() {
           ) : null}
 
           <View style={styles.field}>
-            <Text style={styles.label}>Emri i plotë</Text>
+            <Text style={styles.label}>Full Name</Text>
             <TextInput
               style={styles.input} value={fullName}
               onChangeText={t => { clearError(); setFullName(t); }}
-              placeholder="Emri Mbiemri" placeholderTextColor={Colors.outline}
+              placeholder="Full Name" placeholderTextColor={Colors.outline}
             />
           </View>
 
@@ -46,13 +46,13 @@ export default function RegisterScreen() {
               style={styles.input} value={email}
               onChangeText={t => { clearError(); setEmail(t); }}
               autoCapitalize="none" keyboardType="email-address"
-              placeholder="emri@shembull.al" placeholderTextColor={Colors.outline}
+              placeholder="name@example.com" placeholderTextColor={Colors.outline}
               autoCorrect={false}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Fjalëkalimi (min 8 karaktere)</Text>
+            <Text style={styles.label}>Password (min 8 characters)</Text>
             <TextInput
               style={styles.input} value={password}
               onChangeText={t => { clearError(); setPassword(t); }}
@@ -61,16 +61,16 @@ export default function RegisterScreen() {
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Lloji i llogarisë</Text>
+            <Text style={styles.label}>Account Type</Text>
             <View style={styles.roleRow}>
-              {(['qytetar', 'nepunes'] as UserRole[]).map(r => (
+              {(['citizen', 'clerk'] as UserRole[]).map(r => (
                 <TouchableOpacity
                   key={r}
                   style={[styles.roleBtn, role === r && styles.roleBtnActive]}
                   onPress={() => setRole(r)}
                 >
                   <Text style={[styles.roleBtnText, role === r && styles.roleBtnTextActive]}>
-                    {r === 'qytetar' ? '👤 Qytetar' : '🏛 Nëpunës'}
+                    {r === 'citizen' ? '👤 Citizen' : '🏛 Clerk'}
                   </Text>
                 </TouchableOpacity>
               ))}
@@ -85,14 +85,13 @@ export default function RegisterScreen() {
           >
             {isLoading
               ? <ActivityIndicator color={Colors.onSecondary} size="small" />
-              : <Text style={styles.btnText}>Krijo llogari</Text>
+              : <Text style={styles.btnText}>Create Account</Text>
             }
           </TouchableOpacity>
-
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Keni llogari? </Text>
+            <Text style={styles.footerText}>Already have an account? </Text>
             <Link href="/login" asChild>
-              <TouchableOpacity><Text style={styles.footerLink}>Hyni</Text></TouchableOpacity>
+              <TouchableOpacity><Text style={styles.footerLink}>Sign In</Text></TouchableOpacity>
             </Link>
           </View>
         </View>

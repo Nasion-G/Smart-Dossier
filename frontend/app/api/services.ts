@@ -1,8 +1,8 @@
 import { apiClient } from './client';
 import type {
   AuthTokens, LoginRequest, RegisterRequest,
-  Dosja, DashboardStats, Dokument, FazaLog,
-  AdvancePhaseRequest, CreateDosjaRequest, ExtractedFields,
+  Case, DashboardStats, DocumentFile, PhaseLog,
+  AdvancePhaseRequest, CreateCaseRequest, ExtractedFields,
 } from '../types';
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
@@ -14,46 +14,46 @@ export const auth = {
 };
 
 // ─── Cases ─────────────────────────────────────────────────────────────────
-export const dosjet = {
+export const cases = {
   list: (phase?: number) =>
-    apiClient.get<Dosja[]>('/dosjet', { params: phase ? { phase } : {} }).then(r => r.data),
+    apiClient.get<Case[]>('/cases', { params: phase ? { phase } : {} }).then(r => r.data),
   mine: () =>
-    apiClient.get<Dosja[]>('/dosjet/mine').then(r => r.data),
+    apiClient.get<Case[]>('/cases/mine').then(r => r.data),
   get: (id: string) =>
-    apiClient.get<Dosja>(`/dosjet/${id}`).then(r => r.data),
-  create: (body: CreateDosjaRequest) =>
-    apiClient.post<Dosja>('/dosjet', body).then(r => r.data),
-  update: (id: string, body: Partial<CreateDosjaRequest>) =>
-    apiClient.patch<Dosja>(`/dosjet/${id}`, body).then(r => r.data),
+    apiClient.get<Case>(`/cases/${id}`).then(r => r.data),
+  create: (body: CreateCaseRequest) =>
+    apiClient.post<Case>('/cases', body).then(r => r.data),
+  update: (id: string, body: Partial<CreateCaseRequest>) =>
+    apiClient.patch<Case>(`/cases/${id}`, body).then(r => r.data),
   advancePhase: (id: string, body: AdvancePhaseRequest) =>
-    apiClient.patch<Dosja>(`/dosjet/${id}/phase`, body).then(r => r.data),
+    apiClient.patch<Case>(`/cases/${id}/phase`, body).then(r => r.data),
   stats: () =>
-    apiClient.get<DashboardStats>('/dosjet/stats').then(r => r.data),
+    apiClient.get<DashboardStats>('/cases/stats').then(r => r.data),
   phaseHistory: (id: string) =>
-    apiClient.get<FazaLog[]>(`/dosjet/${id}/history`).then(r => r.data),
+    apiClient.get<PhaseLog[]>(`/cases/${id}/history`).then(r => r.data),
 };
 
 // ─── Documents ─────────────────────────────────────────────────────────────
-export const dokumentet = {
-  upload: (dosjaId: string, file: { uri: string; name: string; type: string }) => {
+export const documents = {
+  upload: (caseId: string, file: { uri: string; name: string; type: string }) => {
     const form = new FormData();
     form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
-    return apiClient.post<Dokument>(`/dosjet/${dosjaId}/dokument`, form, {
+    return apiClient.post<DocumentFile>(`/cases/${caseId}/documents`, form, {
       headers: { 'Content-Type': 'multipart/form-data' },
     }).then(r => r.data);
   },
-  list: (dosjaId: string) =>
-    apiClient.get<Dokument[]>(`/dosjet/${dosjaId}/dokument`).then(r => r.data),
-  extract: (dokumentId: string) =>
-    apiClient.post<ExtractedFields>(`/dokumentet/${dokumentId}/extract`).then(r => r.data),
-  confirmExtraction: (dosjaId: string, fields: Partial<ExtractedFields>) =>
-    apiClient.patch(`/dosjet/${dosjaId}`, fields).then(r => r.data),
+  list: (caseId: string) =>
+    apiClient.get<DocumentFile[]>(`/cases/${caseId}/documents`).then(r => r.data),
+  extract: (documentId: string) =>
+    apiClient.post<ExtractedFields>(`/documents/${documentId}/re-extract`).then(r => r.data),
+  confirmExtraction: (documentId: string) =>
+    apiClient.post(`/documents/${documentId}/confirm`).then(r => r.data),
 };
 
 // ─── AI ────────────────────────────────────────────────────────────────────
 export const ai = {
-  summary: (dosjaId: string) =>
-    apiClient.post<{ summary: string }>(`/dosjet/${dosjaId}/ai-summary`).then(r => r.data.summary),
-  generateShkrese: (dosjaId: string) =>
-    apiClient.post<{ letter: string }>(`/dosjet/${dosjaId}/generate-shkrese`).then(r => r.data.letter),
+  summary: (caseId: string) =>
+    apiClient.post<{ summary: string }>(`/cases/${caseId}/ai-summary`).then(r => r.data.summary),
+  generateLetter: (caseId: string) =>
+    apiClient.post<{ letter: string }>(`/cases/${caseId}/generate-letter`).then(r => r.data.letter),
 };

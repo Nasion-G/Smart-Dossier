@@ -17,7 +17,7 @@ interface AuthState {
 }
 
 const navigate = (role: string) => {
-  if (role === 'nepunes') router.replace('/(clerk)/dashboard');
+  if (role === 'clerk') router.replace('/(clerk)/dashboard');
   else router.replace('/(citizen)/track');
 };
 
@@ -50,7 +50,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: data.user, token: data.access_token, isLoading: false });
       navigate(data.user.role);
     } catch (e: any) {
-      set({ error: e?.response?.data?.detail ?? 'Hyrja dështoi. Kontrolloni kredencialet.', isLoading: false });
+      set({ error: e?.response?.data?.detail ?? 'Login failed. Check your credentials.', isLoading: false });
     }
   },
 
@@ -63,7 +63,7 @@ export const useAuthStore = create<AuthState>((set) => ({
       set({ user: result.user, token: result.access_token, isLoading: false });
       navigate(result.user.role);
     } catch (e: any) {
-      set({ error: e?.response?.data?.detail ?? 'Regjistrimi dështoi.', isLoading: false });
+      set({ error: e?.response?.data?.detail ?? 'Registration failed.', isLoading: false });
     }
   },
 

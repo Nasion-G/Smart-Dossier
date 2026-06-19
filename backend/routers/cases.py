@@ -38,7 +38,6 @@ def _assert_access(case: Case, user: User) -> None:
         raise HTTPException(404, "Case not found")
 
 
-# ── List all cases ────────────────────────────────────────────────────────────
 
 @router.get("/", response_model=list[CaseRead])
 async def list_cases(
@@ -61,7 +60,6 @@ async def list_cases(
     return [CaseRead(**enrich(c)) for c in result.scalars().all()]
 
 
-# ── Citizen shortcut ──────────────────────────────────────────────────────────
 
 @router.get("/mine", response_model=list[CaseRead])
 async def my_cases(
@@ -74,7 +72,6 @@ async def my_cases(
     return [CaseRead(**enrich(c)) for c in result.scalars().all()]
 
 
-# ── Dashboard stats ───────────────────────────────────────────────────────────
 
 @router.get("/stats", response_model=DashboardStats)
 async def dashboard_stats(
@@ -114,7 +111,6 @@ async def dashboard_stats(
     )
 
 
-# ── Single case ───────────────────────────────────────────────────────────────
 
 @router.get("/{case_id}", response_model=CaseRead)
 async def get_case(
@@ -127,7 +123,6 @@ async def get_case(
     return CaseRead(**enrich(case))
 
 
-# ── Create ────────────────────────────────────────────────────────────────────
 
 @router.post("/", response_model=CaseRead, status_code=201)
 async def create_case(
@@ -157,7 +152,6 @@ async def create_case(
     return CaseRead(**enrich(case))
 
 
-# ── Update fields ─────────────────────────────────────────────────────────────
 
 @router.patch("/{case_id}", response_model=CaseRead)
 async def update_case(
@@ -174,7 +168,6 @@ async def update_case(
     return CaseRead(**enrich(case))
 
 
-# ── Phase advance ─────────────────────────────────────────────────────────────
 
 @router.patch("/{case_id}/phase", response_model=CaseRead)
 async def advance_phase(
@@ -188,7 +181,6 @@ async def advance_phase(
     return CaseRead(**enrich(case))
 
 
-# ── Phase history ─────────────────────────────────────────────────────────────
 
 @router.get("/{case_id}/history", response_model=list[PhaseLogRead])
 async def phase_history(
@@ -206,7 +198,6 @@ async def phase_history(
     return result.scalars().all()
 
 
-# ── AI: Case summary ──────────────────────────────────────────────────────────
 
 @router.post("/{case_id}/ai-summary", response_model=AISummaryResponse)
 async def ai_summary(
@@ -220,7 +211,6 @@ async def ai_summary(
     return AISummaryResponse(summary=summary)
 
 
-# ── AI: Formal letter ─────────────────────────────────────────────────────────
 
 @router.post("/{case_id}/generate-letter", response_model=AILetterResponse)
 async def generate_letter(

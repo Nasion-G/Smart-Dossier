@@ -30,7 +30,6 @@ async def _get_case_or_404(case_id: UUID, db: AsyncSession) -> Case:
     return case
 
 
-# ── Upload document (triggers Docling + GLiNER2 pipeline) ────────────────────
 
 @router.post("/{case_id}/documents", response_model=DocumentRead, status_code=201)
 async def upload_document(
@@ -101,7 +100,6 @@ async def upload_document(
     return DocumentRead.model_validate(doc)
 
 
-# ── List documents for a case ─────────────────────────────────────────────────
 
 @router.get("/{case_id}/documents", response_model=list[DocumentRead])
 async def list_documents(
@@ -118,7 +116,6 @@ async def list_documents(
     return result.scalars().all()
 
 
-# ── Re-run extraction on an existing document ─────────────────────────────────
 
 @router.post("/documents/{doc_id}/re-extract", response_model=ExtractedFields)
 async def re_extract(
@@ -151,7 +148,6 @@ async def re_extract(
     return ExtractedFields(**extracted)
 
 
-# ── Clerk confirms extraction → write fields into the parent case ─────────────
 
 @router.post("/documents/{doc_id}/confirm")
 async def confirm_extraction(

@@ -19,13 +19,13 @@ export default function LoginScreen() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         <View style={styles.header}>
-          <Text style={styles.wordmark}>DI</Text>
-          <Text style={styles.brand}>Dosja Inteligjente</Text>
-          <Text style={styles.subtitle}>Sistemi i menaxhimit të dosjeve EKB</Text>
+          <Text style={styles.wordmark}>EKB</Text>
+          <Text style={styles.brand}>Smart Dossier</Text>
+          <Text style={styles.subtitle}>EKB Case Management System</Text>
         </View>
 
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Hyni në sistem</Text>
+          <Text style={styles.cardTitle}>Sign In</Text>
 
           {error ? (
             <View style={styles.errorBox}>
@@ -41,14 +41,14 @@ export default function LoginScreen() {
               onChangeText={t => { clearError(); setEmail(t); }}
               autoCapitalize="none"
               keyboardType="email-address"
-              placeholder="emri@shembull.al"
+              placeholder="name@example.com"
               placeholderTextColor={Colors.outline}
               autoCorrect={false}
             />
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Fjalëkalimi</Text>
+            <Text style={styles.label}>Password</Text>
             <TextInput
               style={styles.input}
               value={password}
@@ -67,15 +67,15 @@ export default function LoginScreen() {
           >
             {isLoading
               ? <ActivityIndicator color={Colors.onPrimary} size="small" />
-              : <Text style={styles.btnText}>Hyrja</Text>
+              : <Text style={styles.btnText}>Sign In</Text>
             }
           </TouchableOpacity>
 
           <View style={styles.footer}>
-            <Text style={styles.footerText}>Nuk keni llogari? </Text>
+            <Text style={styles.footerText}>Don't have an account? </Text>
             <Link href="/register" asChild>
               <TouchableOpacity>
-                <Text style={styles.footerLink}>Regjistrohu</Text>
+                <Text style={styles.footerLink}>Register</Text>
               </TouchableOpacity>
             </Link>
           </View>
@@ -84,11 +84,11 @@ export default function LoginScreen() {
         {/* Demo accounts hint */}
         <View style={styles.demoBox}>
           <Text style={styles.demoTitle}>Demo accounts</Text>
-          <Text style={styles.demoText}>Nëpunës: nepunesl@ekb.gov.al / test1234</Text>
-          <Text style={styles.demoText}>Qytetar: qytetari1@gmail.com / test1234</Text>
+          <Text style={styles.demoText}>Clerk: clerk@ekb.gov / test1234</Text>
+          <Text style={styles.demoText}>Citizen: alice@mail.com / test1234</Text>
         </View>
 
-        <Text style={styles.version}>EKB · Privatizim v1.0</Text>
+        <Text style={styles.version}>EKB · Privatization v1.0</Text>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -137,9 +137,11 @@ const styles = StyleSheet.create({
   footerLink: { ...Typography.bodySm, color: Colors.secondary, fontFamily: 'Inter_600SemiBold' },
   demoBox: {
     backgroundColor: Colors.primaryContainer,
-    borderRadius: BorderRadius.lg,
+    borderRadius: BorderRadius.xl,
     padding: 14,
     gap: 4,
+    borderWidth: 1,
+    borderColor: Colors.primary,
   },
   demoTitle: { ...Typography.labelCaps, color: Colors.inversePrimary, marginBottom: 4 },
   demoText: { ...Typography.bodySm, color: Colors.onPrimaryContainer, fontSize: 12 },

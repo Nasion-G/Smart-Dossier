@@ -11,6 +11,10 @@ class UserBase(BaseModel):
 class UserCreate(UserBase):
     password: str
 
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
 class UserRead(UserBase):
     id: UUID
     created_at: datetime

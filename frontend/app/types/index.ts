@@ -1,4 +1,4 @@
-export type UserRole = 'nepunes' | 'qytetar';
+export type UserRole = 'clerk' | 'citizen';
 
 export interface User {
   id: string;
@@ -14,9 +14,9 @@ export interface AuthTokens {
   user: User;
 }
 
-export type DosjaStatus = 'active' | 'blocked' | 'completed';
+export type CaseStatus = 'active' | 'blocked' | 'completed';
 
-export interface Dosja {
+export interface Case {
   id: string;
   code: string;
   title: string;
@@ -26,7 +26,7 @@ export interface Dosja {
   zone: string | null;
   income_bracket: string | null;
   current_phase: number;
-  status: DosjaStatus;
+  status: CaseStatus;
   phase_entered_at: string;
   assigned_to: string | null;
   citizen_id: string | null;
@@ -36,9 +36,9 @@ export interface Dosja {
   is_blocked: boolean;
 }
 
-export interface FazaLog {
+export interface PhaseLog {
   id: string;
-  dosja_id: string;
+  case_id: string;
   phase: number;
   entered_at: string;
   exited_at: string | null;
@@ -46,9 +46,9 @@ export interface FazaLog {
   changed_by: string | null;
 }
 
-export interface Dokument {
+export interface DocumentFile {
   id: string;
-  dosja_id: string;
+  case_id: string;
   filename: string;
   file_path: string;
   extracted_data: ExtractedFields | null;
@@ -76,7 +76,7 @@ export interface RegisterRequest {
   role: UserRole;
 }
 
-export interface CreateDosjaRequest {
+export interface CreateCaseRequest {
   title: string;
   owner_name?: string;
   property_id?: string;

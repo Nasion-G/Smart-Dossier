@@ -7,11 +7,11 @@ import { Colors, Typography, BorderRadius, Spacing, PHASE_LABELS, BOTTLENECK_PHA
 type StatusType = 'completed' | 'active' | 'blocked' | 'ontrack' | 'review';
 
 const STATUS_CONFIG: Record<StatusType, { label: string; bg: string; fg: string }> = {
-  completed: { label: '✓ Përfunduar',  bg: Colors.statusCompletedBg, fg: Colors.statusCompleted },
-  active:    { label: '● Aktive',       bg: Colors.statusOnTrackBg,  fg: Colors.statusOnTrack },
-  blocked:   { label: '✕ Bllokuar',    bg: Colors.statusBlockedBg,  fg: Colors.statusBlocked },
-  ontrack:   { label: '● Në rregull',  bg: Colors.statusOnTrackBg,  fg: Colors.statusOnTrack },
-  review:    { label: '⚠ Në shqyrtim', bg: Colors.statusInReviewBg, fg: Colors.statusInReview },
+  completed: { label: '✓ Completed',  bg: Colors.statusCompletedBg, fg: Colors.statusCompleted },
+  active:    { label: '● Active',       bg: Colors.statusOnTrackBg,  fg: Colors.statusOnTrack },
+  blocked:   { label: '✕ Blocked',    bg: Colors.statusBlockedBg,  fg: Colors.statusBlocked },
+  ontrack:   { label: '● On Track',  bg: Colors.statusOnTrackBg,  fg: Colors.statusOnTrack },
+  review:    { label: '⚠ In Review', bg: Colors.statusInReviewBg, fg: Colors.statusInReview },
 };
 
 export function StatusChip({ type }: { type: StatusType }) {
