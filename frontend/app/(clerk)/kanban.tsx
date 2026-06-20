@@ -41,7 +41,7 @@ export default function KanbanScreen() {
       <View style={styles.header}>
         <View>
           <Text style={styles.headerTitle}>Kanban Board</Text>
-          <Text style={styles.headerSub}>Click a card to open case detail</Text>
+          <Text style={styles.headerSub}>Tap a card to open case detail</Text>
         </View>
         {blockedCount > 0 && (
           <View style={styles.blockedBadge}>
@@ -52,7 +52,7 @@ export default function KanbanScreen() {
         )}
       </View>
 
-      {/* Kanban columns */}
+      {/* Kanban columns — horizontal scroll track */}
       {isLoading ? (
         <ActivityIndicator
           color={Colors.secondary}
@@ -63,6 +63,9 @@ export default function KanbanScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator
+          // FIX: the track must NOT be flex:1 in a nested context — give it a fixed height
+          // by letting the parent (root flex:1) drive the height, and keeping the scroll
+          // view itself as flex:1 so it fills the remaining space below the header.
           style={styles.trackScroll}
           contentContainerStyle={styles.trackContent}
           refreshControl={
@@ -75,8 +78,6 @@ export default function KanbanScreen() {
         >
           {[1, 2, 3, 4, 5, 6, 7].map((phase) => {
             const phaseCases = items.filter((c) => c.current_phase === phase);
-            // Column color reflects the cases sitting in it right now:
-            // red if any is blocked, green if all are completed, neutral otherwise.
             const hasBlockedCases = phaseCases.some((c) => c.is_blocked);
             const allCompleted =
               phaseCases.length > 0 &&
@@ -92,6 +93,7 @@ export default function KanbanScreen() {
                       hasBlockedCases && styles.columnLabelBlocked,
                       allCompleted && styles.columnLabelDone,
                     ]}
+                    numberOfLines={1}
                   >
                     F{phase} · {PHASE_LABELS[phase]}
                   </Text>
@@ -117,31 +119,42 @@ export default function KanbanScreen() {
                   )}
                 </View>
 
-                {/* Column cards */}
-                {allCompleted ? (
-                  <View style={styles.completedCard}>
-                    <Text style={styles.completedIcon}>✓</Text>
-                    <Text style={styles.completedTitle}>
-                      {phaseCases.length} cases completed
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() =>
-                        router.push({
-                          pathname: "/(clerk)/cases",
-                          params: { phase: "7" },
-                        })
-                      }
-                    >
-                      <Text style={styles.completedLink}>View archive →</Text>
-                    </TouchableOpacity>
-                  </View>
-                ) : phaseCases.length === 0 ? (
-                  <View style={styles.emptyCol}>
-                    <Text style={styles.emptyColText}>No cases</Text>
-                  </View>
-                ) : (
-                  phaseCases.map((c) => <KanbanCard key={c.id} caseItem={c} />)
-                )}
+                {/* FIX: wrap cards in a vertical ScrollView so columns with many cards
+                    scroll independently. nestedScrollEnabled allows this inside the
+                    horizontal parent ScrollView on Android. */}
+                <ScrollView
+                  style={styles.columnScroll}
+                  contentContainerStyle={styles.columnContent}
+                  showsVerticalScrollIndicator={false}
+                  nestedScrollEnabled
+                >
+                  {allCompleted ? (
+                    <View style={styles.completedCard}>
+                      <Text style={styles.completedIcon}>✓</Text>
+                      <Text style={styles.completedTitle}>
+                        {phaseCases.length} cases completed
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() =>
+                          router.push({
+                            pathname: "/(clerk)/cases",
+                            params: { phase: "7" },
+                          })
+                        }
+                      >
+                        <Text style={styles.completedLink}>View archive →</Text>
+                      </TouchableOpacity>
+                    </View>
+                  ) : phaseCases.length === 0 ? (
+                    <View style={styles.emptyCol}>
+                      <Text style={styles.emptyColText}>No cases</Text>
+                    </View>
+                  ) : (
+                    phaseCases.map((c) => (
+                      <KanbanCard key={c.id} caseItem={c} />
+                    ))
+                  )}
+                </ScrollView>
               </View>
             );
           })}
@@ -152,9 +165,6 @@ export default function KanbanScreen() {
 }
 
 function KanbanCard({ caseItem }: { caseItem: Case }) {
-  // Single source of truth for status color — same helper used in the case
-  // list, so a card's color always tracks the case's real state instead of
-  // a per-component hardcoded check.
   const statusVisual = getCaseStatusVisual(caseItem);
 
   const initials = (caseItem.owner_name ?? "??")
@@ -238,31 +248,36 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius.lg,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
   },
   blockedBadgeText: {
     ...Typography.labelCaps,
     color: Colors.onErrorContainer,
     fontSize: 10,
   },
+
+  // FIX: flex:1 here so the horizontal scroll fills available height (below header)
   trackScroll: { flex: 1 },
   trackContent: {
     padding: Spacing.marginPage,
-    gap: 24,
+    gap: 16,
     paddingBottom: 24,
+    // alignItems: "flex-start" is critical — without this, columns stretch to the
+    // ScrollView's content height and you can never scroll down inside them.
+    alignItems: "flex-start",
   },
+
+  // FIX: column must have a fixed height (not flex:1) so vertical scroll works
   column: {
-    width: 300,
-    gap: 12,
+    width: 280,
+    // maxHeight constrains the column so cards overflow into a vertical scroll
+    maxHeight: 600,
     flexShrink: 0,
   },
   columnHeader: {
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
-    marginBottom: 2,
+    marginBottom: 8,
   },
   columnLabel: {
     ...Typography.labelCaps,
@@ -284,6 +299,11 @@ const styles = StyleSheet.create({
   countTextBlocked: { color: Colors.statusBlocked },
   countTextDone: { color: Colors.statusCompleted },
   blockedIcon: { fontSize: 14, color: Colors.statusBlocked },
+
+  // FIX: the vertical scroll wrapper for column cards
+  columnScroll: { flex: 1 },
+  columnContent: { gap: 10, paddingBottom: 8 },
+
   card: {
     backgroundColor: Colors.surfaceContainerLowest,
     borderRadius: BorderRadius.xl,

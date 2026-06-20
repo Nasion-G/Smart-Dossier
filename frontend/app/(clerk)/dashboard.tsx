@@ -28,7 +28,7 @@ function getDynamicSubtitle(
   blockedCount: number,
   totalActive: number,
   completionRate: number,
-  avgCycleDays: number
+  avgCycleDays: number,
 ): string {
   if (totalActive === 0) {
     const pool = [
@@ -59,30 +59,30 @@ function getDynamicSubtitle(
 
   if (avgCycleDays > 0 && avgCycleDays <= 30) {
     pool.push(
-      `Good velocity: an average cycle of ${avgCycleDays} days across ${totalActive} active cases.`
+      `Good velocity: an average cycle of ${avgCycleDays} days across ${totalActive} active cases.`,
     );
     pool.push(
-      `Cases are closing in ${avgCycleDays} days on average — ahead of schedule.`
+      `Cases are closing in ${avgCycleDays} days on average — ahead of schedule.`,
     );
   } else if (avgCycleDays > 60) {
     pool.push(
-      `Cycle times are running long at ${avgCycleDays} days average — worth reviewing phases 3 and 6.`
+      `Cycle times are running long at ${avgCycleDays} days average — worth reviewing phases 3 and 6.`,
     );
     pool.push(
-      `Average turnaround is ${avgCycleDays} days. The known bottlenecks may be adding up.`
+      `Average turnaround is ${avgCycleDays} days. The known bottlenecks may be adding up.`,
     );
   }
 
   if (completionRate >= 70) {
     pool.push(
-      `${Math.round(completionRate)}% of cases have reached registration — strong throughput overall.`
+      `${Math.round(completionRate)}% of cases have reached registration — strong throughput overall.`,
     );
   } else if (completionRate > 0 && completionRate < 30) {
     pool.push(
-      `${Math.round(completionRate)}% completion rate. Most cases are still in progress.`
+      `${Math.round(completionRate)}% completion rate. Most cases are still in progress.`,
     );
     pool.push(
-      `Only ${Math.round(completionRate)}% of cases have completed so far — the pipeline still has room to clear.`
+      `Only ${Math.round(completionRate)}% of cases have completed so far — the pipeline still has room to clear.`,
     );
   }
 
@@ -134,7 +134,12 @@ export default function DashboardScreen() {
         stats?.avg_cycle_days ?? 0,
       ),
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    [blockedCount, stats?.total_active, stats?.completion_rate, stats?.avg_cycle_days],
+    [
+      blockedCount,
+      stats?.total_active,
+      stats?.completion_rate,
+      stats?.avg_cycle_days,
+    ],
   );
 
   return (
