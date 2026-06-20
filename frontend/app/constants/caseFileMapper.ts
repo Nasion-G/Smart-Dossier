@@ -30,7 +30,8 @@ function buildPhases(c: Case, logs: PhaseLog[]): CaseFilePhase[] {
   for (let i = 1; i <= 7; i++) {
     const log = logByPhase.get(i);
     let status: "done" | "active" | "pending";
-    if (i < c.current_phase) status = "done";
+    if (c.status === "completed" && i <= c.current_phase) status = "done";
+    else if (i < c.current_phase) status = "done";
     else if (i === c.current_phase) status = "active";
     else status = "pending";
 
@@ -97,7 +98,7 @@ export function buildCaseFileData(c: Case, logs: PhaseLog[]): CaseFileData {
     department: c.zone ?? "EKB",
     statusLabel: statusLabel(c),
     phases,
-    phasesCompleted: c.current_phase - 1,
+    phasesCompleted: c.status === "completed" ? 7 : c.current_phase - 1,
     phasesTotal: 7,
     estimatedCompletion: c.status === "completed"
       ? "Completed"
