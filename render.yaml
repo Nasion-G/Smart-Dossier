@@ -25,8 +25,8 @@ services:
       - key: CORS_ORIGINS
         value: '["*"]'  # lock down after deploy to your Render URL
       - key: OLLAMA_HOST
-        value: http://localhost:11434  # not running; AI endpoints return 503
+        value: http://localhost:11434  # not bundled; AI features require Standard plan + Ollama container
       - key: OLLAMA_MODEL
-        value: qwen2.5:7b
+        value: qwen2.5:1.5b
       - key: UPLOAD_DIR
         value: /tmp/uploads

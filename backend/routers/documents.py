@@ -84,6 +84,15 @@ async def upload_document(
         except Exception as e:
             logger.warning("GLiNER2 extraction failed: %s", e)
 
+    # ── Ollama: document-level checklist ──────────────────────────────────
+    checklist: dict | None = None
+    if markdown_text:
+        try:
+            from services.ai_service import check_document_checklist
+            checklist = await check_document_checklist(markdown_text)
+        except Exception as e:
+            logger.warning("Document checklist failed: %s", e)
+
     # Persist document record
     doc = Document(
         case_id=case_id,
@@ -92,10 +101,27 @@ async def upload_document(
         mime_type=mime,
         docling_markdown=markdown_text,
         extracted_data=extracted if any(v is not None for v in extracted.values()) else None,
+        checklist=checklist,
     )
     db.add(doc)
     await db.commit()
     await db.refresh(doc)
+
+    # ── Recompute case-level phase checklist from all documents ────────────
+    if markdown_text:
+        try:
+            from services.ai_service import check_phase_checklist
+            docs_result = await db.execute(
+                select(Document.docling_markdown).where(Document.case_id == case_id)
+            )
+            all_markdown = "\n\n---\n\n".join(m for (m,) in docs_result.all() if m)
+            case_result = await db.execute(select(Case).where(Case.id == case_id))
+            case = case_result.scalar_one_or_none()
+            if case and all_markdown:
+                case.phase_checklist = await check_phase_checklist(all_markdown)
+                await db.commit()
+        except Exception as e:
+            logger.warning("Phase checklist failed: %s", e)
 
     return DocumentRead.model_validate(doc)
 

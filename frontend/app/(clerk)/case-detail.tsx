@@ -26,7 +26,18 @@ import {
 } from "../constants/design";
 import * as DocumentPicker from "expo-document-picker";
 
+<<<<<<< HEAD
 type Tab = "summary" | "extracted" | "ai" | "advance";
+=======
+type Tab = 'summary' | 'extracted' | 'ai' | 'advance';
+const DOC_CHECK_LABELS: Record<string, string> = {
+  has_owner_name: 'Owner name',
+  has_property_id: 'Property ID',
+  has_signature: 'Signature',
+  has_official_stamp: 'Official stamp',
+  is_dated: 'Dated',
+};
+>>>>>>> cf4369d97b263c3016b56fa97229d71ac6a72924
 
 export default function CaseDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -222,18 +233,23 @@ export default function CaseDetailScreen() {
                     });
                     if (!result.canceled && result.assets[0]) {
                       const file = result.assets[0];
+<<<<<<< HEAD
                       await documents.upload(id, {
                         uri: file.uri,
                         name: file.name,
                         type: file.mimeType ?? "application/pdf",
                       });
                       qc.invalidateQueries({ queryKey: ["docs", id] });
+=======
+                      await documents.upload(id, { uri: file.uri, name: file.name, type: file.mimeType ?? 'application/pdf' });
+                      qc.invalidateQueries({ queryKey: ['docs', id] });
+                      qc.invalidateQueries({ queryKey: ['case', id] });
+>>>>>>> cf4369d97b263c3016b56fa97229d71ac6a72924
                     }
                   }}
                 >
                   <Text style={styles.docUploadLink}>+ Upload</Text>
                 </TouchableOpacity>
-              </View>
               {docs.map((doc) => (
                 <View
                   key={doc.id}
@@ -250,6 +266,15 @@ export default function CaseDetailScreen() {
                     <Text style={styles.docMeta}>
                       {doc.confirmed ? "Verified" : "In Review"}
                     </Text>
+                    {doc.checklist && (
+                      <View style={styles.docChecklist}>
+                        {Object.entries(doc.checklist).map(([key, val]) => (
+                          <Text key={key} style={val ? styles.docCheckOk : styles.docCheckFail}>
+                            {val ? '\u2713' : '\u2717'} {DOC_CHECK_LABELS[key] ?? key}
+                          </Text>
+                        ))}
+                      </View>
+                    )}
                   </View>
                   <View
                     style={[
@@ -468,6 +493,7 @@ export default function CaseDetailScreen() {
                   </Text>
                 </View>
                 <View style={styles.checklistCard}>
+<<<<<<< HEAD
                   <Text style={styles.checklistTitle}>
                     CURRENT CHECKLIST BEFORE ADVANCING
                   </Text>
@@ -497,6 +523,29 @@ export default function CaseDetailScreen() {
                   ) : (
                     <Text style={styles.checkNone}>
                       Case is in final phase — no further advancement needed.
+=======
+                  <Text style={styles.checklistTitle}>DOCUMENT & PHASE CHECKLIST</Text>
+                  {caseItem.phase_checklist ? (
+                    <>
+                      {[1, 2, 3, 4, 5, 6, 7].map((phase) => {
+                        const key = String(phase);
+                        const passed = caseItem.phase_checklist![key];
+                        return (
+                          <View key={key} style={styles.checkItem}>
+                            <Text style={passed ? styles.checkOk : styles.checkFail}>
+                              {passed ? '\u2713' : '\u2717'}
+                            </Text>
+                            <Text style={passed ? styles.checkOkText : styles.checkFailText}>
+                              Phase {phase}: {PHASE_LABELS[phase]}
+                            </Text>
+                          </View>
+                        );
+                      })}
+                    </>
+                  ) : (
+                    <Text style={styles.checkNone}>
+                      Upload documents to generate a phase checklist. Ollama must be running.
+>>>>>>> cf4369d97b263c3016b56fa97229d71ac6a72924
                     </Text>
                   )}
                 </View>
@@ -815,12 +864,19 @@ const styles = StyleSheet.create({
   docDot: { width: 8, height: 8, borderRadius: 4, flexShrink: 0 },
   docDotDone: { backgroundColor: Colors.statusCompleted },
   docDotActive: { backgroundColor: Colors.secondary },
+<<<<<<< HEAD
   docEmpty: {
     ...Typography.bodySm,
     color: Colors.onSurfaceVariant,
     textAlign: "center",
     padding: 20,
   },
+=======
+  docEmpty: { ...Typography.bodySm, color: Colors.onSurfaceVariant, textAlign: 'center', padding: 20 },
+  docChecklist: { marginTop: 6, gap: 2 },
+  docCheckOk: { ...Typography.labelCaps, color: Colors.statusCompleted, fontSize: 9 },
+  docCheckFail: { ...Typography.labelCaps, color: Colors.error, fontSize: 9 },
+>>>>>>> cf4369d97b263c3016b56fa97229d71ac6a72924
 
   // Main panel
   mainPanel: { flex: 1, overflow: "hidden" },

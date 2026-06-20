@@ -34,6 +34,7 @@ export interface Case {
   updated_at: string;
   days_in_phase: number;
   is_blocked: boolean;
+  phase_checklist: Record<string, boolean> | null;
 }
 
 export interface PhaseLog {
@@ -51,7 +52,10 @@ export interface DocumentFile {
   case_id: string;
   filename: string;
   file_path: string;
+  mime_type: string | null;
+  docling_markdown: string | null;
   extracted_data: ExtractedFields | null;
+  checklist: Record<string, boolean> | null;
   confirmed: boolean;
   uploaded_at: string;
 }

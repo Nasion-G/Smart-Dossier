@@ -1,23 +1,23 @@
 {
   "expo": {
-    "name": "Dosja Inteligjente",
-    "slug": "dosja-inteligjente",
+    "name": "Smart Dossier",
+    "slug": "smart-dossier",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "dosja",
+    "scheme": "smart-dossier",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "al.gov.dosja-inteligjente"
+      "bundleIdentifier": "al.gov.smart-dossier"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#000e28"
       },
-      "package": "al.gov.dosja_inteligjente"
+      "package": "al.gov.smart_dossier"
     },
     "web": {
       "bundler": "metro",

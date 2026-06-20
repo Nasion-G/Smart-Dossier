@@ -59,6 +59,7 @@ class CaseRead(BaseModel):
     updated_at: datetime
     days_in_phase: int = 0
     is_blocked: bool = False
+    phase_checklist: Optional[Dict[str, bool]] = None
     class Config:
         from_attributes = True
 
@@ -92,8 +93,8 @@ class DocumentRead(BaseModel):
     mime_type: Optional[str] = None
     docling_markdown: Optional[str] = None
     extracted_data: Optional[Dict[str, Any]] = None
+    checklist: Optional[Dict[str, bool]] = None
     confirmed: bool = False
-    uploaded_at: datetime
     class Config:
         from_attributes = True
 

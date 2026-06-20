@@ -222,3 +222,23 @@ async def generate_letter(
     from services.ai_service import generate_letter
     letter = await generate_letter(case)
     return AILetterResponse(letter=letter)
+
+
+@router.post("/{case_id}/phase-checklist")
+async def recompute_phase_checklist(
+    case_id: UUID,
+    user: User = Depends(require_role("clerk")),
+    db: AsyncSession = Depends(get_session),
+):
+    case = await _get_case_or_404(case_id, db)
+    from models import Document
+    from services.ai_service import check_phase_checklist
+    docs_result = await db.execute(
+        select(Document.docling_markdown).where(Document.case_id == case_id)
+    )
+    all_markdown = "\n\n---\n\n".join(m for (m,) in docs_result.all() if m)
+    if not all_markdown:
+        raise HTTPException(400, "No document text available for this case")
+    case.phase_checklist = await check_phase_checklist(all_markdown)
+    await db.commit()
+    return case.phase_checklist

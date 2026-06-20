@@ -1,4 +1,4 @@
-package al.gov.dosja_inteligjente
+package al.gov.smart_dossier
 
 import android.app.Application
 import android.content.res.Configuration

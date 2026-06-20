@@ -4,7 +4,7 @@ Intelligent Case Management System — FastAPI backend
 AI stack (fully local, no API keys):
   - Docling     → PDF/DOCX/image → Markdown conversion (with OCR)
   - GLiNER2     → structured field extraction from Markdown (205M encoder, CPU)
-  - Qwen2.5:7b  → case summaries and letter generation (via Ollama)
+  - Qwen2.5:1.5b → case summaries, letters, and checklist validation (via Ollama)
 """
 
 import asyncio
@@ -56,7 +56,7 @@ app = FastAPI(
     description=(
         "EKB property privatization case management. "
         "AI stack: Docling (document parsing) + GLiNER2 (field extraction) + "
-        "Qwen2.5:7b via Ollama (summaries & letters). All local, no API keys."
+        "Qwen2.5:1.5b via Ollama (summaries & letters). All local, no API keys."
     ),
     lifespan=lifespan,
 )
