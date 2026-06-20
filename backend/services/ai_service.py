@@ -1,23 +1,21 @@
 """
 services/ai_service.py
 
-Uses Qwen2.5:7b running locally via Ollama for the two generative features:
-  1. Case summary — reason about where a case is stuck and what to do next
-  2. Formal letter generation — produce an official government letter
+Uses Qwen2.5:1.5b running locally via Ollama for generative features and
+document/phase checklist validation.
 
-Why Qwen2.5:7b for this
------------------------
-- Specifically noted for reliable JSON and structured output (we use plain text here
-  but the instruction-following quality is what matters)
-- Runs on CPU with ~5GB RAM — no GPU required for a hackathon demo
-- Multilingual support (29 languages) — handles any language in the documents
-- OpenAI-compatible API via Ollama, so swapping to a larger model is one line
-- Apache 2.0 license for sizes other than 3B/72B
+Why Qwen2.5:1.5b
+-----------------
+- Small enough (~1 GB) to auto-pull and run on modest hardware
+- Reliable JSON-mode output via Ollama — no free-text parsing needed
+- OpenAI-compatible API — swap to larger model by changing one config line
+- Apache 2.0 license
 
 Setup (once):
-  ollama pull qwen2.5:7b
+  ollama pull qwen2.5:1.5b
 """
 
+import json
 import asyncio
 import logging
 from fastapi import HTTPException
@@ -25,6 +23,7 @@ from fastapi import HTTPException
 import ollama as ollama_client
 
 from config import settings
+
 
 logger = logging.getLogger(__name__)
 
@@ -155,8 +154,67 @@ async def generate_letter(case) -> str:
 def check_ollama_available() -> bool:
     """Health check — returns True if Ollama is reachable and the model is loaded."""
     try:
-        models = ollama_client.Client(host=settings.OLLAMA_HOST).list()
-        names = [m["name"] for m in models.get("models", [])]
+        result = ollama_client.Client(host=settings.OLLAMA_HOST).list()
+        names = [m.model for m in (result.models or [])]
         return any(settings.OLLAMA_MODEL in n for n in names)
     except Exception:
         return False
+
+
+# ── Checklist validation ──────────────────────────────────────────────────────
+
+DOCUMENT_CHECKLIST = {
+    "has_owner_name":     "the document clearly states the property owner's or applicant's full name",
+    "has_property_id":    "the document includes a property, cadastral, or parcel ID number",
+    "has_signature":      "the document contains a signature or a signed signature line",
+    "has_official_stamp": "the document references or shows an official stamp, seal, or institutional certification",
+    "is_dated":           "the document includes a clear date",
+}
+
+PHASE_CHECKLIST = {
+    "1": "a public notice for this property has been issued or referenced",
+    "2": "a citizen application has been submitted with required paperwork",
+    "3": "ASHK legal verification has been completed or confirmed",
+    "4": "the property's value has been calculated",
+    "5": "a contract has been signed",
+    "6": "the case file has been transferred to ASHK",
+    "7": "the property has been formally registered",
+}
+
+CHECKLIST_SYSTEM_TEMPLATE = (
+    "You are validating documents for a property privatization case. "
+    "Given the text below, decide true or false for each item, based ONLY on what is "
+    "explicitly present in the text — never guess or assume.\n\n"
+    "Checklist (respond with exactly these keys):\n{schema}\n\n"
+    "Respond with ONLY a JSON object mapping each key to true or false. No other text."
+)
+
+
+def _call_ollama_json(system: str, prompt: str) -> dict:
+    try:
+        response = ollama_client.Client(host=settings.OLLAMA_HOST).chat(
+            model=settings.OLLAMA_MODEL,
+            messages=[{"role": "system", "content": system}, {"role": "user", "content": prompt}],
+            format="json",
+            options={"temperature": 0.0, "num_predict": 300},
+        )
+        return json.loads(response["message"]["content"])
+    except Exception as e:
+        logger.error("Ollama JSON call failed: %s", e)
+        raise HTTPException(503, f"AI service unavailable: {e}")
+
+
+async def check_document_checklist(markdown_text: str) -> dict:
+    system = CHECKLIST_SYSTEM_TEMPLATE.format(schema=json.dumps(DOCUMENT_CHECKLIST, indent=2))
+    prompt = f"Document text:\n{markdown_text[:4000]}"
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, _call_ollama_json, system, prompt)
+    return {k: bool(result.get(k, False)) for k in DOCUMENT_CHECKLIST}
+
+
+async def check_phase_checklist(combined_markdown: str) -> dict:
+    system = CHECKLIST_SYSTEM_TEMPLATE.format(schema=json.dumps(PHASE_CHECKLIST, indent=2))
+    prompt = f"All uploaded document text for this case:\n{combined_markdown[:6000]}"
+    loop = asyncio.get_event_loop()
+    result = await loop.run_in_executor(None, _call_ollama_json, system, prompt)
+    return {k: bool(result.get(k, False)) for k in PHASE_CHECKLIST}

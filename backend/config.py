@@ -9,7 +9,7 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60
     CORS_ORIGINS: list[str] = ["http://localhost:3000", "http://localhost:5173", "http://localhost:8081", "http://localhost:19006"]
     OLLAMA_HOST: str = "http://ollama:11434"
-    OLLAMA_MODEL: str = "qwen2.5:7b"
+    OLLAMA_MODEL: str = "qwen2.5:1.5b"
     UPLOAD_DIR: str = "/tmp/case-uploads"
     MAX_FILE_MB: int = 10
 

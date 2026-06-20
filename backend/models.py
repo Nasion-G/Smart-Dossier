@@ -29,6 +29,7 @@ class Case(Base):
     current_phase = Column(Integer, nullable=False, default=1)
     status = Column(String, nullable=False, default="active")  # active | completed
     phase_entered_at = Column(DateTime(timezone=True), default=utcnow)
+    phase_checklist = Column(JSON, nullable=True)
     assigned_to = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     citizen_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), default=utcnow)
@@ -58,7 +59,7 @@ class Document(Base):
     mime_type = Column(String, nullable=True)
     docling_markdown = Column(Text, nullable=True)
     extracted_data = Column(JSON, nullable=True)
+    checklist = Column(JSON, nullable=True)
     confirmed = Column(Boolean, default=False)
     uploaded_at = Column(DateTime(timezone=True), default=utcnow)
-
     case = relationship("Case", back_populates="documents")

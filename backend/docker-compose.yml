@@ -1,8 +1,5 @@
 version: "3.9"
 
-# No Anthropic API, no GPU needed.
-# AI stack: GLiNER2 (embedded in backend process) + Qwen2.5:7b via Ollama (CPU).
-
 services:
   postgres:
     image: postgres:16-alpine
@@ -28,18 +25,15 @@ services:
       - ollama_models:/root/.ollama
     ports:
       - "11434:11434"
-    # Remove the deploy block if you have no GPU — Qwen2.5:7b runs fine on CPU
-    # deploy:
-    #   resources:
-    #     reservations:
-    #       devices:
-    #         - capabilities: [gpu]
+    entrypoint: ["/bin/sh", "-c"]
+    command:
+      - "ollama serve & sleep 3 && ollama pull qwen2.5:1.5b; wait"
     healthcheck:
       test: ["CMD", "ollama", "list"]
       interval: 10s
       timeout: 10s
       retries: 10
-      start_period: 30s
+      start_period: 60s
 
   backend:
     build:
@@ -59,7 +53,7 @@ services:
       - "8000:8000"
     volumes:
       - uploads:/tmp/case-uploads
-      - .:/app   # live reload in dev
+      - .:/app # live reload in dev
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
 volumes:
