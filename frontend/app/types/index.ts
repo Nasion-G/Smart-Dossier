@@ -102,3 +102,34 @@ export interface DashboardStats {
   completion_rate: number;
   cases_by_phase: Record<number, number>;
 }
+
+// ── Citizen Case File View ─────────────────────────────────────────────────
+export type PhaseStatus = "done" | "active" | "pending";
+
+export interface CaseFilePhase {
+  id: number;
+  title: string;
+  subtitle: string;
+  date: string;
+  status: PhaseStatus;
+  detail: string;
+  officer: string;
+}
+
+export interface CaseFileData {
+  caseType: string;
+  title: string;
+  caseNumber: string;
+  filedBy: string;
+  dateFiled: string;
+  department: string;
+  statusLabel: string;
+  phases: CaseFilePhase[];
+  phasesCompleted: number;
+  phasesTotal: number;
+  estimatedCompletion: string;
+  nextStepHeading: string;
+  nextStepBody: string;
+  actionPrimary?: { label: string; onPress?: () => void };
+  actionSecondary?: { label: string; onPress?: () => void };
+}
