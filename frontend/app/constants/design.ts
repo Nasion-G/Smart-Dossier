@@ -133,4 +133,52 @@ export const PHASE_DESCRIPTIONS: Record<number, string> = {
   7: "ASHK registers ownership",
 };
 
+// Known slow phases — this is workflow domain knowledge (used e.g. to label
+// the phase filter chips and dashboard copy), NOT a per-case status. Don't
+// use this to color an individual case/card — use getCaseStatusVisual below,
+// which reflects what's actually happening with that specific case.
 export const BOTTLENECK_PHASES = [3, 6];
+
+// ─── Dynamic status → color mapping ────────────────────────────────────────
+// A single source of truth for "what color should this case's status badge
+// be", driven entirely by the case's own computed fields (status / is_blocked)
+// rather than a static lookup keyed off the phase number. Use this anywhere
+// you're rendering a status indicator for a specific case (list rows, kanban
+// cards, badges) so the color always matches reality instead of just "this
+// phase is usually slow".
+export type CaseStatusKey = "completed" | "blocked" | "active";
+
+export interface CaseStatusVisual {
+  key: CaseStatusKey;
+  fg: string;
+  bg: string;
+  label: string;
+}
+
+export function getCaseStatusVisual(caseItem: {
+  status: string;
+  is_blocked: boolean;
+}): CaseStatusVisual {
+  if (caseItem.status === "completed") {
+    return {
+      key: "completed",
+      fg: Colors.statusCompleted,
+      bg: Colors.statusCompletedBg,
+      label: "Completed",
+    };
+  }
+  if (caseItem.is_blocked) {
+    return {
+      key: "blocked",
+      fg: Colors.statusBlocked,
+      bg: Colors.statusBlockedBg,
+      label: "Blocked",
+    };
+  }
+  return {
+    key: "active",
+    fg: Colors.statusOnTrack,
+    bg: Colors.statusOnTrackBg,
+    label: "On Track",
+  };
+}

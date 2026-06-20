@@ -20,6 +20,7 @@ import {
   BorderRadius,
   PHASE_LABELS,
   BOTTLENECK_PHASES,
+  getCaseStatusVisual,
 } from "../constants/design";
 import type { Case } from "../types";
 
@@ -69,7 +70,9 @@ export default function CasesScreen() {
         />
       </View>
 
-      {/* Phase filter chips */}
+      {/* Phase filter chips — this highlights phases that are *historically*
+          slow (workflow knowledge), not the live status of any single case.
+          Individual case rows below get their color from actual status. */}
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
@@ -148,7 +151,12 @@ export default function CasesScreen() {
 }
 
 function CaseItem({ caseItem }: { caseItem: Case }) {
-  const isBottleneck = BOTTLENECK_PHASES.includes(caseItem.current_phase);
+  // Color comes from the case's own computed status (is_blocked / status),
+  // not from whether its current phase happens to be a known bottleneck.
+  // A case that just entered phase 3 ten minutes ago stays "on track" blue
+  // until it's actually flagged blocked by the backend.
+  const statusVisual = getCaseStatusVisual(caseItem);
+
   return (
     <TouchableOpacity
       style={[styles.item, caseItem.is_blocked && styles.itemBlocked]}
@@ -162,15 +170,8 @@ function CaseItem({ caseItem }: { caseItem: Case }) {
     >
       <View style={styles.itemTop}>
         <Text style={styles.itemCode}>{caseItem.code}</Text>
-        <View
-          style={[styles.phaseBadge, isBottleneck && styles.phaseBadgeWarn]}
-        >
-          <Text
-            style={[
-              styles.phaseBadgeText,
-              isBottleneck && styles.phaseBadgeTextWarn,
-            ]}
-          >
+        <View style={[styles.phaseBadge, { backgroundColor: statusVisual.bg }]}>
+          <Text style={[styles.phaseBadgeText, { color: statusVisual.fg }]}>
             F{caseItem.current_phase}
           </Text>
         </View>
@@ -286,13 +287,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 7,
     paddingVertical: 3,
   },
-  phaseBadgeWarn: { backgroundColor: Colors.statusInReviewBg },
   phaseBadgeText: {
     ...Typography.labelCaps,
     color: Colors.onSurfaceVariant,
     fontSize: 9,
   },
-  phaseBadgeTextWarn: { color: Colors.statusInReview },
   itemTitle: {
     ...Typography.bodySm,
     color: Colors.onSurface,
