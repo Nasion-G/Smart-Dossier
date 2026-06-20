@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: backend-config
+  namespace: techtrek
+data:
+  REDIS_URL: {{ .Values.redisUrl | quote }}

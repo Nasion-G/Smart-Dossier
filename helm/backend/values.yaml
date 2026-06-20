@@ -1,0 +1,8 @@
+replicaCount: 1
+image: "helion444/backend:v13"
+service:
+  port: 8000
+redisUrl: "redis://redis-service:6379"
+databaseUrl: "postgresql+asyncpg://postgres:postgres@your-db-host:5432/one_albania"
+secretKey: ""
+secretKey: "CHANGE_ME"

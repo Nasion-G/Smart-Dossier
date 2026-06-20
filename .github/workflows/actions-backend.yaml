@@ -1,0 +1,80 @@
+name: Build, Test and Push Docker Images
+
+on:
+  push:
+    branches: ["master"]
+  pull_request:
+    branches: ["master"]
+  workflow_dispatch: 
+concurrency:
+  group: helm-update
+  cancel-in-progress: false
+
+jobs:
+  pipeline:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install dependencies
+        working-directory: backend
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pytest
+
+      - name: Run tests
+        working-directory: backend
+        run: |
+          pytest -q
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Docker image
+        run: |
+          VERSION=v${{ github.run_number }}
+          docker buildx build \
+            --cache-from type=gha \
+            --cache-to type=gha,mode=max \
+            --load \
+            -t helion444/backend:$VERSION \
+            ./backend
+
+      - name: Login to Docker Hub
+        if: github.ref == 'refs/heads/master'
+        run: |
+          echo "${{ secrets.DOCKERHUB_PASSWORD }}" | docker login -u "${{ secrets.DOCKERHUB_USERNAME }}" --password-stdin
+
+      - name: Push Docker image
+        if: github.ref == 'refs/heads/master'
+        run: |
+          VERSION=v${{ github.run_number }}
+          docker push helion444/backend:$VERSION
+
+      - name: Update Helm values
+        if: github.ref == 'refs/heads/master'
+        run: |
+          VERSION=v${{ github.run_number }}
+          sed -i "s|tag:.*|tag: \"$VERSION\"|" helm/backend/values.yaml
+
+      - name: Commit Helm update
+        if: github.ref == 'refs/heads/master'
+        run: |
+          VERSION=v${{ github.run_number }}
+          git config user.name "github-actions"
+          git config user.email "github-actions@github.com"
+          git add helm/frontend/values.yaml
+          git diff --staged --quiet && echo "no changes" && exit 0
+          git commit -m "ci: update frontend image to $VERSION"
+          git pull --rebase origin master
+          git push
