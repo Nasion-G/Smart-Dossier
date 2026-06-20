@@ -1,0 +1,32 @@
+# Render Blueprint — deploys Smart Dossier in one click
+# https://render.com/docs/blueprint-spec
+
+services:
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  - type: pserv
+    name: smart-dossier-db
+    plan: free
+    ipAllowList: []  # only internal connections
+
+  # ── Web Service (backend + frontend in one container) ─────────────────────
+  - type: web
+    name: smart-dossier
+    plan: free
+    runtime: docker
+    dockerfilePath: ./Dockerfile.render
+    dockerContext: .
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: smart-dossier-db
+          property: connectionString
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        value: '["*"]'  # lock down after deploy to your Render URL
+      - key: OLLAMA_HOST
+        value: http://localhost:11434  # not running; AI endpoints return 503
+      - key: OLLAMA_MODEL
+        value: qwen2.5:7b
+      - key: UPLOAD_DIR
+        value: /tmp/uploads

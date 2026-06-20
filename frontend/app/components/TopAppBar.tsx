@@ -26,7 +26,7 @@ export function TopAppBar({ viewLabel, userInitials, onMenuPress }: TopAppBarPro
       <View style={styles.right}>
         <Text style={styles.viewLabel}>{viewLabel}</Text>
         <TouchableOpacity style={styles.iconBtn}>
-          <Text style={styles.iconText}>🔔</Text>
+          <Text style={styles.iconText}>{'\u25C9'}</Text>
         </TouchableOpacity>
         <View style={styles.avatar}>
           <Text style={styles.avatarText}>{userInitials}</Text>

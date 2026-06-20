@@ -125,7 +125,7 @@ async def summarize_case(case) -> str:
 
 
 LETTER_SYSTEM = (
-    "Generate a formal government administrative letter from EKB (Enti i Kalimit të Banesave) "
+    "Generate a formal government administrative letter from EKB (Property Privatization Authority) "
     "addressed to ASHK (Agency of State Cadastre).\n\n"
     "Required format:\n"
     "  Ref No: [reference] / [date]\n"

@@ -1,0 +1,56 @@
+# ── Single-container Smart Dossier for Render ──────────────────────────────
+# Multi-stage: builds Expo static export, packs nginx + uvicorn via supervisord.
+# Layer order: deps first (cached) → config → code last.
+#
+# Build:  docker build -f Dockerfile.render -t smart-dossier .
+# Run:    docker run -p 80:80 -e DATABASE_URL=... -e SECRET_KEY=... smart-dossier
+
+# ─── Stage 1: Build Expo web frontend ───────────────────────────────────────
+FROM node:20-slim AS frontend-build
+
+WORKDIR /frontend
+
+# npm deps — only re-installs when package.json/package-lock.json change
+COPY frontend/package.json frontend/package-lock.json ./
+RUN npm ci && npm cache clean --force
+
+# Frontend source + build
+COPY frontend/ ./
+RUN npx expo export --platform web
+
+# ─── Stage 2: Production image ──────────────────────────────────────────────
+FROM python:3.11-slim
+
+# System deps — rarely changes, cached after first build
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    nginx \
+    supervisor \
+    gcc g++ \
+    libpq-dev \
+    poppler-utils \
+    tesseract-ocr \
+    libgl1 \
+    libglib2.0-0 \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Backend Python deps — only re-installs when requirements.txt changes
+COPY backend/requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Backend code
+COPY backend/ .
+
+# Frontend static files from stage 1
+COPY --from=frontend-build /frontend/dist /usr/share/nginx/html
+
+# Config files
+COPY nginx.render.conf /etc/nginx/conf.d/default.conf
+COPY supervisord.render.conf /etc/supervisor/conf.d/supervisord.conf
+COPY start.render.sh /start.sh
+RUN chmod +x /start.sh
+
+EXPOSE 80
+
+CMD ["/start.sh"]

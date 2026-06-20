@@ -80,7 +80,7 @@ export function PageHeader({ title, subtitle, onBack, rightElement }: PageHeader
 
 // ─── EmptyState ───────────────────────────────────────────────────────────
 
-export function EmptyState({ icon = '📂', title, body }: { icon?: string; title: string; body?: string }) {
+export function EmptyState({ icon = '\u229E', title, body }: { icon?: string; title: string; body?: string }) {
   return (
     <View style={s.empty}>
       <Text style={s.emptyIcon}>{icon}</Text>

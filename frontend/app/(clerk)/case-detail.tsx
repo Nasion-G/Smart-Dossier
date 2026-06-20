@@ -194,7 +194,7 @@ export default function CaseDetailScreen() {
               </View>
               {docs.map((doc) => (
                 <View key={doc.id} style={[styles.docCard, doc.confirmed && styles.docCardActive]}>
-                  <Text style={styles.docIcon}>📄</Text>
+                  <Text style={styles.docIcon}>{'\u25A1'}</Text>
                   <View style={styles.docInfo}>
                     <Text style={styles.docName} numberOfLines={1}>{doc.filename}</Text>
                     <Text style={styles.docMeta}>
@@ -322,7 +322,7 @@ export default function CaseDetailScreen() {
 
                 {summary && !summaryLoading && (
                   <View style={styles.aiResult}>
-                    <Text style={styles.aiResultLabel}>AI ANALYSIS · LLAMA 3.2</Text>
+                    <Text style={styles.aiResultLabel}>AI ANALYSIS</Text>
                     <Text style={styles.aiResultText}>{summary}</Text>
                   </View>
                 )}

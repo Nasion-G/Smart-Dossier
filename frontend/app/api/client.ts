@@ -1,12 +1,13 @@
 import axios, { AxiosInstance } from 'axios';
 import { Platform } from 'react-native';
 
-// ── Change this to your backend IP / URL ──────────────────────────────────
+// ── API base URL ────────────────────────────────────────────────────────────
+// In dev: direct to backend port. In prod: same origin (nginx proxies /api/*).
 const API_BASE = __DEV__
   ? Platform.OS === 'android'
-    ? 'http://10.0.2.2:8000'   // Android emulator → host
-    : 'http://localhost:8000'   // iOS sim + web
-  : 'https://api.dosja.gov.al';
+    ? 'http://10.0.2.2:8000'
+    : 'http://localhost:8000'
+  : '';  // empty = same origin, nginx handles /api → backend
 
 export const TOKEN_KEY = 'dosja_access_token';
 export const USER_KEY = 'dosja_user';
