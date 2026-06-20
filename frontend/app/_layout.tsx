@@ -47,7 +47,6 @@ export default function RootLayout() {
           <Stack.Screen name="login" />
           <Stack.Screen name="register" />
           <Stack.Screen name="(clerk)" />
-          <Stack.Screen name="(citizen)" />
         </Stack>
       </QueryClientProvider>
     </GestureHandlerRootView>
