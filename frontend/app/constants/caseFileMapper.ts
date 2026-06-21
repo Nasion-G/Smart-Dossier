@@ -98,7 +98,7 @@ export function buildCaseFileData(c: Case, logs: PhaseLog[]): CaseFileData {
     department: c.zone ?? "EKB",
     statusLabel: statusLabel(c),
     phases,
-    phasesCompleted: c.status === "completed" ? 7 : c.current_phase - 1,
+    phasesCompleted: c.status === "completed" ? c.current_phase : c.current_phase - 1,
     phasesTotal: 7,
     estimatedCompletion: c.status === "completed"
       ? "Completed"

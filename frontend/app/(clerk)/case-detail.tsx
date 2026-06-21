@@ -95,7 +95,7 @@ export default function CaseDetailScreen() {
   }
 
   const isBlocked = caseItem.is_blocked;
-  const canAdvance = caseItem.current_phase < 7;
+  const canAdvance = caseItem.current_phase < 7 && caseItem.status !== "completed";
 
   return (
     <View style={styles.root}>
@@ -142,9 +142,11 @@ export default function CaseDetailScreen() {
               </Text>
               <View style={styles.timeline}>
                 {[1, 2, 3, 4, 5, 6, 7].map((phase) => {
-                  const done = phase < caseItem.current_phase;
-                  const active = phase === caseItem.current_phase;
-                  const pending = phase > caseItem.current_phase;
+                  const done = caseItem.status === "completed"
+                    ? phase <= caseItem.current_phase
+                    : phase < caseItem.current_phase;
+                  const active = caseItem.status !== "completed" && phase === caseItem.current_phase;
+                  const pending = caseItem.status !== "completed" && phase > caseItem.current_phase;
 
                   return (
                     <View key={phase} style={styles.timelineRow}>

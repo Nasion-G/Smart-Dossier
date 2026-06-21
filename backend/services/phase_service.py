@@ -20,6 +20,8 @@ def enrich(case: Case) -> dict:
 
 async def advance_phase(case: Case, new_phase: int, notes: str, user, db: AsyncSession) -> Case:
     from datetime import datetime, timezone
+    if case.status == "completed":
+        raise HTTPException(400, "Cannot advance a completed case")
     if new_phase <= case.current_phase or new_phase > 7:
         from fastapi import HTTPException
         raise HTTPException(400, "Invalid phase transition")

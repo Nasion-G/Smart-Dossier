@@ -43,6 +43,7 @@ class CaseUpdate(BaseModel):
     income_bracket: Optional[str] = None
     family_size: Optional[int] = None
     status: Optional[str] = None
+    assigned_to: Optional[UUID] = None
 
 class CaseRead(BaseModel):
     id: UUID

@@ -88,7 +88,7 @@ async def dashboard_stats(
     )
 
     avg_cycle = (
-        round(sum((c.updated_at - c.created_at).days for c in completed) / len(completed), 1)
+        round(sum((c.phase_entered_at - c.created_at).days for c in completed) / len(completed), 1)
         if completed else 0.0
     )
 
@@ -97,7 +97,7 @@ async def dashboard_stats(
     )
 
     cases_by_phase: dict[int, int] = {i: 0 for i in range(1, 8)}
-    for c in active:
+    for c in all_cases:
         cases_by_phase[c.current_phase] = cases_by_phase.get(c.current_phase, 0) + 1
 
     return DashboardStats(
