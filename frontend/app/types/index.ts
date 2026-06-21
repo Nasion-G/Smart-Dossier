@@ -66,6 +66,7 @@ export interface ExtractedFields {
   zone: string | null;
   income_bracket: string | null;
   family_size: number | null;
+  phase: number | null;
 }
 
 export interface LoginRequest {
@@ -88,6 +89,7 @@ export interface CreateCaseRequest {
   income_bracket?: string;
   family_size?: number;
   citizen_id?: string;
+  starting_phase?: number;
 }
 
 export interface AdvancePhaseRequest {

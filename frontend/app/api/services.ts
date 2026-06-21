@@ -1,9 +1,29 @@
 import { apiClient } from './client';
+import { Platform } from "react-native";
+
 import type {
   AuthTokens, LoginRequest, RegisterRequest,
   Case, DashboardStats, DocumentFile, PhaseLog,
   AdvancePhaseRequest, CreateCaseRequest, ExtractedFields,
 } from '../types';
+
+/** Append a file to FormData, handling web (blob fetch) vs native (RN format). */
+async function appendFileToForm(
+  form: FormData,
+  fieldName: string,
+  file: { uri: string; name: string; type: string },
+): Promise<void> {
+  if (Platform.OS === "web") {
+    const response = await fetch(file.uri);
+    const blob = await response.blob();
+    form.append(fieldName, blob, file.name);
+  } else {
+    // React Native FormData polyfill: {uri, name, type} is read from filesystem.
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    form.append(fieldName, { uri: file.uri, name: file.name, type: file.type } as any);
+  }
+}
+
 
 // ─── Auth ──────────────────────────────────────────────────────────────────
 export const auth = {
@@ -27,6 +47,13 @@ export const cases = {
     apiClient.get<Case>(`/cases/${id}`).then(r => r.data),
   create: (body: CreateCaseRequest) =>
     apiClient.post<Case>('/cases', body).then(r => r.data),
+  extractFields: async (file: { uri: string; name: string; type: string }) => {
+    const form = new FormData();
+    await appendFileToForm(form, "file", file);
+    return apiClient.post<ExtractedFields>("/cases/extract-fields", form, {
+      headers: { "Content-Type": "multipart/form-data" },
+    }).then(r => r.data);
+  },
   update: (id: string, body: Partial<CreateCaseRequest>) =>
     apiClient.patch<Case>(`/cases/${id}`, body).then(r => r.data),
   advancePhase: (id: string, body: AdvancePhaseRequest) =>
@@ -39,11 +66,11 @@ export const cases = {
 
 // ─── Documents ─────────────────────────────────────────────────────────────
 export const documents = {
-  upload: (caseId: string, file: { uri: string; name: string; type: string }) => {
+  upload: async (caseId: string, file: { uri: string; name: string; type: string }) => {
     const form = new FormData();
-    form.append('file', { uri: file.uri, name: file.name, type: file.type } as unknown as Blob);
+    await appendFileToForm(form, "file", file);
     return apiClient.post<DocumentFile>(`/cases/${caseId}/documents`, form, {
-      headers: { 'Content-Type': 'multipart/form-data' },
+      headers: { "Content-Type": "multipart/form-data" },
     }).then(r => r.data);
   },
   list: (caseId: string) =>

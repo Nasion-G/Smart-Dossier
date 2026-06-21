@@ -40,6 +40,7 @@ FIELD_SCHEMA = {
     "zone":            "zone, district, neighborhood, city, or location of the property",
     "income_bracket":  "income category, economic group, or income classification of the applicant",
     "family_size":     "number of family members, household size, or number of dependants",
+    "phase":           "current phase or stage number of the legalization process, e.g. phase 1, faza 2, etapa 3",
 }
 # Maximum characters to pass to GLiNER2 — the model has a token limit.
 # Head+tail strategy: first 2/3 + last 1/3 to catch fields on any page.
@@ -94,7 +95,7 @@ def _extract_with_gliner2(text: str) -> dict:
         raw = model.extract_json(
             text=truncated,
             structures=structures,
-            threshold=0.45,
+            threshold=0.35,
         )
         # extract_json returns {"extraction": [{field: value, ...}]}
         items = raw.get("extraction", [])
@@ -116,23 +117,32 @@ def _extract_with_gliner2(text: str) -> dict:
 
 _REGEX_PATTERNS: dict[str, list[str]] = {
     "owner_name": [
-        # Albanian names: "Emri Mbiemri", "EMRI MBIEMRI", "Emri-Mbiemri"
-        r"(?:owner|applicant|full\s+name)[:\s]+([A-Z][A-Za-z\u00C0-\u024F\-']+(?:\s+[A-Z][A-Za-z\u00C0-\u024F\-']+)+)",
-        r"(?:name)[:\s]+([A-Z][A-Za-z\u00C0-\u024F\-']+(?:\s+[A-Z][A-Za-z\u00C0-\u024F\-']+)+)",
+        # English: "Owner: Besnik Mjeda" — names on a single line only
+        r"(?:owner|applicant|full\s+name)[:\s]+([A-Z][A-Za-z\u00C0-\u024F\-']+(?:[^\S\n][A-Z][A-Za-z\u00C0-\u024F\-']+){1,3})",
+        r"(?:name)[:\s]+([A-Z][A-Za-z\u00C0-\u024F\-']+(?:[^\S\n][A-Z][A-Za-z\u00C0-\u024F\-']+){1,3})",
+        # Albanian: "Emri i plote i aplikuesit: Besnik Mjeda"
+        r"(?:emri(?:\s+i\s+plot[ëe])?(?:\s+i\s+aplikuesit)?|aplikuesit?)[:\s]+([A-Z][A-Za-z\u00C0-\u024F\-']+(?:[^\S\n][A-Z][A-Za-z\u00C0-\u024F\-']+){1,3})",
     ],
     "property_id": [
         r"(?:property\s+id|property\s+number|cadastral\s+(?:no|number)|parcel\s+(?:id|no))[:\s]+([A-Z0-9\-/]+)",
-        r"(?:asset\s+id|reference\s+no)[:\s]+([A-Z0-9\-/]{4,20})",
+        r"(?:asset\s+id|reference\s+no|nr[\.\s]+seri)[:\s]+([^\n]{3,20})",
     ],
     "zone": [
         # Allow commas for multi-part zone names like "Vasil Shanto Zone, Tirana"
-        r"(?:zone|district|neighborhood|location|address)[:\s]+([^\n]{4,80})",
+        r"(?:zone|district|neighborhood|location|address|zona|rajoni)[^:\n]*:\s*([^\n]{4,80})",
     ],
     "income_bracket": [
         r"(?:income\s+(?:category|bracket|group|class)|economic\s+group)[:\s]+([^\n]{2,30})",
+        # Albanian: "Kategoria e te ardhurave: Kategoria B"
+        r"(?:kategoria(?:\s+e\s+t[ëe]\s+ardhurave)?|t[ëe]\s+ardhurave)[:\s]+([^\n]{2,30})",
     ],
     "family_size": [
         r"(?:family\s+(?:members?|size)|household\s+size|number\s+of\s+(?:dependants?|members?))[:\s]+(\d+)",
+        # Albanian: "Madhesia e familjes: 4 anetare"
+        r"(?:madhesia|familjes|antar[ëe])[:\s]+(\d+)",
+    ],
+    "phase": [
+        r"(?:phase|stage|faza|etapa)\s*[:#]?\s*(\d+)",
     ],
 }
 
@@ -144,26 +154,50 @@ def _extract_with_regex(text: str) -> dict:
             m = re.search(pattern, text, re.IGNORECASE | re.MULTILINE)
             if m:
                 val = m.group(1).strip().rstrip(".,;")
-                results[field] = int(val) if field == "family_size" else val
+                results[field] = int(val) if field in ("family_size", "phase") else val
                 break
     return results
-
+def _normalize_markdown(text: str) -> str:
+    """Insert newlines before known Albanian field labels — Docling can squash
+    multi-field blocks into a single line, breaking regex extraction."""
+    labels = [
+        r"Emri\s+i\s+plot[ëe]\s+i\s+aplikuesit:",
+        r"Numri\s+i\s+pasuris[ëe]",
+        r"Zona\s*/\s*Rajoni:",
+        r"Kategoria\s+e\s+t[ëe]\s+ardhurave:",
+        r"Madh[ëe]sia\s+e\s+familjes:",
+        r"Faza\s*(?:e\s+)?(?:procesit)?\s*:",
+        r"Etapa\s*:",
+        r"Deklarat[ëe]:",
+        r"N[ëe]nshkrimi:",
+        r"Vula\s+zyrtare:",
+    ]
+    for label in labels:
+        text = re.sub(rf"\s*({label})", r"\n\1", text, flags=re.IGNORECASE)
+    return text
 
 
 def _extract_sync(markdown_text: str) -> dict:
     """
     Extract fields from Docling Markdown.
     Strategy:
-      1. GLiNER2 (primary — fast, accurate, cannot hallucinate)
-      2. Regex fills any gaps GLiNER2 missed
+      1. Normalize — split squashed field labels onto separate lines
+      2. GLiNER2 (primary — fast, accurate, cannot hallucinate)
+      3. Regex fills any gaps GLiNER2 missed, or overrides owner_name
     """
+    markdown_text = _normalize_markdown(markdown_text)
+    logger.info("Markdown: %d chars, %d lines", len(markdown_text), markdown_text.count("\n") + 1)
+
     gliner_result = _extract_with_gliner2(markdown_text)
     logger.info("GLiNER2 extracted %d fields", len(gliner_result))
 
-    # Fill gaps with regex
+    # Fill gaps with regex, and override GLiNER2 when regex finds a longer match
     regex_result = _extract_with_regex(markdown_text)
     for key, val in regex_result.items():
-        if key not in gliner_result:
+        existing = gliner_result.get(key)
+        if existing is None or key == "owner_name":
+            # Regex patterns are more reliable for owner_name — GLiNER2 at low
+            # thresholds can match non-name all-caps text like "VULAT E KOMUNES".
             gliner_result[key] = val
 
     logger.info("Final extraction: %d/5 fields found", len(gliner_result))
@@ -175,6 +209,7 @@ def _extract_sync(markdown_text: str) -> dict:
         "zone":            gliner_result.get("zone"),
         "income_bracket":  gliner_result.get("income_bracket"),
         "family_size":     gliner_result.get("family_size"),
+        "phase":           gliner_result.get("phase"),
     }
 
 

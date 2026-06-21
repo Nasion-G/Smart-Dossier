@@ -70,15 +70,15 @@ async def seed():
              "Bob Williams",   "P-2024-002", "Northern District, Tirana",     "Category A"),
             (3, "Davis Family — Unit 2A",            2,  3, "carol@mail.com",
              "Carol Davis",    "P-2024-003", "Don Bosko Zone, Tirana",        "Category C"),
-            (4, "Martinez Family — Commercial Unit", 4,  5, "david@mail.com",
+            (4, "Martinez Family — Commercial Unit", 4, 20, "david@mail.com",
              "David Martinez", "P-2024-004", "Central Block, Tirana",         "Category B"),
-            (5, "Johnson Family — Unit 7C",          5,  2, "alice@mail.com",
+            (5, "Johnson Family — Unit 7C",          5, 16, "alice@mail.com",
              "Alice Johnson",  "P-2024-005", "Vaqarr, Tirana",                "Category A"),
             (6, "Williams Family — Agricultural Land", 1, 1, "bob@mail.com",
              None,             None,          "Durres Region",                 None),
             (7, "Davis Family — Garage Unit",        7,  0, "carol@mail.com",
              "Carol Davis",    "P-2023-099", "Kombinat, Tirana",              "Category C"),
-            (8, "Martinez Family — Unit 1D",         3,  9, "david@mail.com",
+            (8, "Martinez Family — Unit 1D",         3, 22, "david@mail.com",
              "David Martinez", "P-2024-008", "Xhamlliku, Tirana",             "Category B"),
         ]
 
@@ -126,10 +126,15 @@ async def seed():
     print("  Citizen: carol@mail.com / test1234   (cases EKB-2026-0003, 0007)")
     print("  Citizen: david@mail.com / test1234   (cases EKB-2026-0004, 0008)")
     print("\nCases by phase:")
-    print("  Phase 3 (blocked 18d): EKB-2026-0001 — Johnson Family Unit 4B")
-    print("  Phase 6 (blocked 35d): EKB-2026-0002 — Williams Family Villa North")
-    print("  Phase 2 (on track):    EKB-2026-0003")
-    print("  Phase 7 (completed):   EKB-2026-0007")
+    print("  Phase 1: EKB-2026-0006 — Williams Family Agricultural Land (1d, on track)")
+    print("  Phase 2: EKB-2026-0003 — Davis Family Unit 2A (3d, on track)")
+    print("  Phase 3: EKB-2026-0001 — Johnson Family Unit 4B (18d, BLOCKED)")
+    print("  Phase 3: EKB-2026-0008 — Martinez Family Unit 1D (22d, BLOCKED)")
+    print("  Phase 4: EKB-2026-0004 — Martinez Family Commercial Unit (20d, BLOCKED)")
+    print("  Phase 5: EKB-2026-0005 — Johnson Family Unit 7C (16d, BLOCKED)")
+    print("  Phase 6: EKB-2026-0002 — Williams Family Villa North (35d, BLOCKED)")
+    print("  Phase 7: EKB-2026-0007 — Davis Family Garage Unit (COMPLETED)")
+    print("\n  5 blocked / 7 active / 1 completed = 8 total")
 
 
 if __name__ == "__main__":

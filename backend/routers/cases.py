@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, UploadFile, File
 from sqlalchemy import select, func
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -11,7 +11,7 @@ from models import Case, PhaseLog, User
 from schemas import (
     CaseCreate, CaseRead, CaseUpdate,
     PhaseAdvance, DashboardStats, PhaseLogRead,
-    AISummaryResponse, AILetterResponse,
+    AISummaryResponse, AILetterResponse, ExtractedFields,
 )
 from auth import get_current_user, require_role
 from services.phase_service import enrich, advance_phase as _advance, BLOCK_THRESHOLDS, days_in_phase
@@ -145,7 +145,11 @@ async def create_case(
     db.add(case)
     await db.flush()
 
-    db.add(PhaseLog(case_id=case.id, phase=1, changed_by=user.id))
+    starting_phase = body.starting_phase if body.starting_phase and 1 <= body.starting_phase <= 7 else 1
+    if starting_phase != 1:
+        case.current_phase = starting_phase
+        case.phase_entered_at = datetime.now(timezone.utc)
+    db.add(PhaseLog(case_id=case.id, phase=starting_phase, changed_by=user.id))
     await db.commit()
     await db.refresh(case)
     return CaseRead(**enrich(case))
@@ -241,3 +245,42 @@ async def recompute_phase_checklist(
     case.phase_checklist = await check_phase_checklist(all_markdown)
     await db.commit()
     return case.phase_checklist
+
+
+@router.post("/extract-fields", response_model=ExtractedFields)
+async def extract_fields_from_pdf(
+    file: UploadFile = File(...),
+    _: User = Depends(require_role("clerk")),
+):
+    """Upload a PDF, extract structured fields via GLiNER2, return them.
+    Does NOT create a case or persist the file — used for new-case autofill.
+    """
+    import tempfile
+    import aiofiles
+    from pathlib import Path
+    from services.docling_service import convert_to_markdown, SUPPORTED_MIME_TYPES
+    from services.extraction_service import extract_fields
+
+    mime = file.content_type or "application/octet-stream"
+    if mime not in SUPPORTED_MIME_TYPES:
+        raise HTTPException(415, f"Unsupported format: {mime}. Accepted: PDF, DOCX, PNG, JPEG, TIFF, TXT.")
+
+    content = await file.read()
+    max_mb = 20
+    if len(content) > max_mb * 1024 * 1024:
+        raise HTTPException(413, f"File too large (max {max_mb} MB).")
+
+    # Write to temp file for Docling
+    suffix = Path(file.filename or "upload").suffix or ".pdf"
+    with tempfile.NamedTemporaryFile(suffix=suffix, delete=False) as tmp:
+        tmp_path = tmp.name
+        tmp.write(content)
+
+    try:
+        markdown_text = await convert_to_markdown(tmp_path)
+        if not markdown_text:
+            raise HTTPException(422, "Could not extract text from document.")
+        extracted = await extract_fields(markdown_text)
+        return ExtractedFields(**extracted)
+    finally:
+        Path(tmp_path).unlink(missing_ok=True)

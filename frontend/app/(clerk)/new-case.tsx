@@ -12,8 +12,35 @@ import {
 } from "react-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { router } from "expo-router";
+import * as DocumentPicker from "expo-document-picker";
 import { cases, auth } from "../api/services";
 import { Colors, Typography, Spacing, BorderRadius } from "../constants/design";
+
+/** Normalize FastAPI error detail (string or Pydantic ValidationError array) to a string. */
+function errMsg(e: any, fallback: string): string {
+  const d = e?.response?.data?.detail;
+  if (!d) return fallback;
+  if (typeof d === "string") return d;
+  if (Array.isArray(d) && d.length > 0) {
+    return d.map((item: any) => item.msg ?? JSON.stringify(item)).join("; ");
+  }
+  return fallback;
+}
+
+/** Map an extracted address string to a ZONE_OPTIONS entry using keyword heuristics. */
+function matchZone(extractedZone: string): string | null {
+  const z = extractedZone.toLowerCase();
+  // Zone 1 - Center: addresses in Tirana city center, boulevards, squares
+  if (/\b(tiran[aeë]|qend[ëe]r|bulevard|shesh|pallat)\b/.test(z)) return ZONE_OPTIONS[0];
+  // Zone 2 - Suburb: outskirts, suburban areas
+  if (/\b(periferi|jasht[ëe]|unaz[ëe]|kombinat|suburb)\b/.test(z)) return ZONE_OPTIONS[1];
+  // Zone 3 - Village: rural areas, villages
+  if (/\b(fshat|katund|vil[ëe]|komun[ëe]|rural)\b/.test(z)) return ZONE_OPTIONS[2];
+  // Zone 4 - Industrial: industrial zones, factories
+  if (/\b(industrial|fabrik[ëe]|zon[ëe] industriale|magazin[ëe])\b/.test(z)) return ZONE_OPTIONS[3];
+  return null;
+}
+
 
 const INCOME_OPTIONS = [
   "Category A (0-30,000 ALL)",
@@ -26,6 +53,15 @@ const ZONE_OPTIONS = [
   "Zone 3 - Village",
   "Zone 4 - Industrial",
 ];
+const PHASE_OPTIONS = [
+  "Phase 1 — Public Notice",
+  "Phase 2 — Document Collection",
+  "Phase 3 — Verification",
+  "Phase 4 — Field Inspection",
+  "Phase 5 — Draft Decision",
+  "Phase 6 — Final Decision",
+  "Phase 7 — Completed",
+];
 
 export default function NewCaseScreen() {
   const qc = useQueryClient();
@@ -34,6 +70,59 @@ export default function NewCaseScreen() {
   const [propertyId, setPropertyId] = useState("");
   const [zone, setZone] = useState("");
   const [incomeBracket, setIncomeBracket] = useState("");
+  const [startingPhase, setStartingPhase] = useState(1);
+  // ── PDF upload + autofill state
+  const [isExtracting, setIsExtracting] = useState(false);
+  const [extractedFileName, setExtractedFileName] = useState<string | null>(null);
+  const [extractError, setExtractError] = useState<string | null>(null);
+
+  const handlePickAndExtract = async () => {
+    setExtractError(null);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "image/png", "image/jpeg"],
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled) return;
+      const file = result.assets[0];
+      setExtractedFileName(file.name);
+      setIsExtracting(true);
+      const fields = await cases.extractFields({
+        uri: file.uri,
+        name: file.name,
+        type: file.mimeType ?? "application/pdf",
+      });
+      // Auto-fill form fields from extracted data
+      if (fields.owner_name && !ownerName.trim()) setOwnerName(fields.owner_name);
+      if (fields.property_id && !propertyId.trim()) setPropertyId(fields.property_id);
+      if (fields.zone && !zone) {
+        const match = matchZone(fields.zone);
+        if (match) setZone(match);
+      }
+      if (fields.income_bracket && !incomeBracket) {
+        // Match on category letter (A/B/C) — handles "Kategoria B" vs "Category B"
+        const letter = fields.income_bracket.match(/\b([A-C])\b/i)?.[1]?.toUpperCase();
+        const match = letter
+          ? INCOME_OPTIONS.find((o) => o.toUpperCase().includes(`CATEGORY ${letter}`))
+          : INCOME_OPTIONS.find((o) =>
+              o.toLowerCase().includes(fields.income_bracket!.toLowerCase())
+            );
+        if (match) setIncomeBracket(match);
+      }
+      if (!title.trim() && fields.owner_name && fields.zone) {
+        setTitle(`${fields.owner_name} — ${fields.zone}`);
+      } else if (!title.trim() && fields.owner_name) {
+        setTitle(fields.owner_name);
+      }
+      if (fields.phase && fields.phase >= 1 && fields.phase <= 7) {
+        setStartingPhase(fields.phase);
+      }
+    } catch (e: any) {
+      setExtractError(errMsg(e, "Extraction failed. Try typing fields manually."));
+    } finally {
+      setIsExtracting(false);
+    }
+  };
 
   // Citizen account linking
   const [citizenEmail, setCitizenEmail] = useState("");
@@ -57,9 +146,7 @@ export default function NewCaseScreen() {
         setOwnerName(user.full_name);
       }
     } catch (e: any) {
-      setLookupError(
-        e?.response?.data?.detail ?? "No user found with that email",
-      );
+      setLookupError(errMsg(e, "No user found with that email"));
       setLinkedCitizenId(null);
       setLinkedCitizenName(null);
     } finally {
@@ -83,6 +170,7 @@ export default function NewCaseScreen() {
         zone,
         income_bracket: incomeBracket,
         citizen_id: linkedCitizenId ?? undefined,
+        starting_phase: startingPhase,
       }),
     onSuccess: (data) => {
       qc.invalidateQueries({ queryKey: ["cases"] });
@@ -99,10 +187,7 @@ export default function NewCaseScreen() {
       ]);
     },
     onError: (e: any) => {
-      Alert.alert(
-        "Error",
-        e?.response?.data?.detail ?? "Could not create case. Please try again.",
-      );
+      Alert.alert("Error", errMsg(e, "Could not create case. Please try again."));
     },
   });
 
@@ -124,6 +209,60 @@ export default function NewCaseScreen() {
             The case will be automatically created in Phase 1 (Public Notice)
             and assigned a unique EKB code.
           </Text>
+        </View>
+
+        {/* PDF Upload + Autofill */}
+        <View style={styles.extractCard}>
+          <View style={styles.extractHeader}>
+            <Text style={styles.extractIcon}>{"📄"}</Text>
+            <View style={styles.extractInfo}>
+              <Text style={styles.extractTitle}>Auto-fill from PDF</Text>
+              <Text style={styles.extractHint}>
+                Upload a property document — fields are extracted automatically.
+              </Text>
+            </View>
+          </View>
+          {extractedFileName && !extractError ? (
+            <View style={styles.extractSuccess}>
+              <Text style={styles.extractSuccessIcon}>{"✓"}</Text>
+              <Text style={styles.extractSuccessText}>
+                {extractedFileName} — fields populated below
+              </Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setExtractedFileName(null);
+                  setExtractError(null);
+                }}
+                style={styles.extractClear}
+              >
+                <Text style={styles.extractClearText}>Clear</Text>
+              </TouchableOpacity>
+            </View>
+          ) : extractError ? (
+            <View style={styles.extractErrorRow}>
+              <Text style={styles.extractErrorText}>{extractError}</Text>
+              <TouchableOpacity onPress={() => setExtractError(null)} style={styles.extractRetry}>
+                <Text style={styles.extractRetryText}>Dismiss</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+          <TouchableOpacity
+            style={[styles.extractBtn, isExtracting && styles.extractBtnDisabled]}
+            onPress={handlePickAndExtract}
+            disabled={isExtracting}
+            activeOpacity={0.85}
+          >
+            {isExtracting ? (
+              <>
+                <ActivityIndicator size="small" color={Colors.onSecondary} />
+                <Text style={styles.extractBtnText}>Extracting…</Text>
+              </>
+            ) : (
+              <Text style={styles.extractBtnText}>
+                {extractedFileName ? "↻ Pick another PDF" : "Choose PDF"}
+              </Text>
+            )}
+          </TouchableOpacity>
         </View>
 
         {/* Citizen Account Link */}
@@ -266,6 +405,33 @@ export default function NewCaseScreen() {
               </Text>
             </TouchableOpacity>
           ))}
+        </Field>
+
+        <Field label="Starting Phase" hint="AI-detected from PDF or manual override">
+          <View style={styles.phaseGrid}>
+            {PHASE_OPTIONS.map((label, i) => {
+              const phaseNum = i + 1;
+              const active = startingPhase === phaseNum;
+              return (
+                <TouchableOpacity
+                  key={phaseNum}
+                  style={[styles.phaseBtn, active && styles.phaseBtnActive]}
+                  onPress={() => setStartingPhase(phaseNum)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={[styles.phaseBtnText, active && styles.phaseBtnTextActive]}>
+                    {phaseNum}
+                  </Text>
+                  <Text
+                    style={[styles.phaseBtnLabel, active && styles.phaseBtnLabelActive]}
+                    numberOfLines={2}
+                  >
+                    {label.replace(/^Phase \d+ — /, "")}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
         </Field>
 
         <TouchableOpacity
@@ -486,4 +652,95 @@ const styles = StyleSheet.create({
     fontSize: 12,
     textAlign: "center",
   },
+  // ── PDF Extract card
+  extractCard: {
+    backgroundColor: Colors.surfaceContainerLowest,
+    borderRadius: BorderRadius.lg,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    padding: 14,
+    gap: 10,
+  },
+  extractHeader: { flexDirection: "row", gap: 12, alignItems: "flex-start" },
+  extractIcon: { fontSize: 22 },
+  extractInfo: { flex: 1, gap: 2 },
+  extractTitle: { ...Typography.bodyLg, color: Colors.onSurface, fontFamily: "Inter_600SemiBold" },
+  extractHint: { ...Typography.bodySm, color: Colors.onSurfaceVariant, fontSize: 12 },
+  extractSuccess: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.statusCompletedBg,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  extractSuccessIcon: { color: Colors.statusCompleted, fontSize: 14 },
+  extractSuccessText: {
+    flex: 1,
+    ...Typography.bodySm,
+    color: Colors.statusCompleted,
+    fontSize: 12,
+  },
+  extractClear: { paddingHorizontal: 8, paddingVertical: 4 },
+  extractClearText: { ...Typography.bodySm, color: Colors.statusCompleted, fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  extractErrorRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+    backgroundColor: Colors.errorContainer,
+    borderRadius: BorderRadius.md,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
+  extractErrorText: { flex: 1, ...Typography.bodySm, color: Colors.error, fontSize: 12 },
+  extractRetry: { paddingHorizontal: 8, paddingVertical: 4 },
+  extractRetryText: { ...Typography.bodySm, color: Colors.onErrorContainer, fontSize: 12, fontFamily: "Inter_600SemiBold" },
+  extractBtn: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    gap: 8,
+    height: 40,
+    backgroundColor: Colors.secondary,
+    borderRadius: BorderRadius.lg,
+  },
+  extractBtnDisabled: { opacity: 0.6 },
+  extractBtnText: {
+    ...Typography.labelCaps,
+    color: Colors.onSecondary,
+    fontSize: 13,
+  },
+  // ── Phase picker
+  phaseGrid: { flexDirection: "row", flexWrap: "wrap", gap: 6 },
+  phaseBtn: {
+    width: "30%",
+    flexGrow: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 6,
+    borderRadius: BorderRadius.md,
+    borderWidth: 1,
+    borderColor: Colors.outlineVariant,
+    backgroundColor: Colors.surfaceContainerLowest,
+    alignItems: "center",
+    gap: 2,
+  },
+  phaseBtnActive: {
+    borderColor: Colors.primary,
+    backgroundColor: Colors.statusOnTrackBg,
+  },
+  phaseBtnText: {
+    ...Typography.labelCaps,
+    color: Colors.onSurfaceVariant,
+    fontSize: 14,
+  },
+  phaseBtnTextActive: { color: Colors.primary },
+  phaseBtnLabel: {
+    ...Typography.bodySm,
+    color: Colors.onSurfaceVariant,
+    fontSize: 10,
+    textAlign: "center",
+    lineHeight: 12,
+  },
+  phaseBtnLabelActive: { color: Colors.primary, fontFamily: "Inter_600SemiBold" },
 });

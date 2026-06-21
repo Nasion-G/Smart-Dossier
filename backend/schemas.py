@@ -34,7 +34,7 @@ class CaseCreate(BaseModel):
     income_bracket: Optional[str] = None
     family_size: Optional[int] = None
     citizen_id: Optional[UUID] = None
-
+    starting_phase: Optional[int] = None
 class CaseUpdate(BaseModel):
     title: Optional[str] = None
     owner_name: Optional[str] = None
@@ -108,7 +108,7 @@ class ExtractedFields(BaseModel):
     zone: Optional[str] = None
     income_bracket: Optional[str] = None
     family_size: Optional[int] = None
-
+    phase: Optional[int] = None
 class AISummaryResponse(BaseModel):
     summary: str
 
